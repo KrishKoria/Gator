@@ -50,6 +50,7 @@ func main()  {
     cmds.register("register", handlerRegister)    
     cmds.register("reset", handlerReset)    
     cmds.register("users", handlerUsers)    
+    cmds.register("agg", handlerAgg)
     
     if len(os.Args) < 2 {
         fmt.Println("Error: No command provided")
@@ -143,6 +144,18 @@ func handlerReset(s *state, cmd command) error {
     }
 
     fmt.Println("Database reset successfully")
+    return nil
+}
+
+func handlerAgg(s *state, cmd command) error {
+    ctx := context.Background()
+    feedURL := "https://www.wagslane.dev/index.xml"
+    feed, err := fetchFeed(ctx, feedURL)
+    if err != nil {
+        return fmt.Errorf("error fetching feed: %v", err)
+    }
+
+    fmt.Printf("Fetched Feed: %+v\n", feed)
     return nil
 }
 
