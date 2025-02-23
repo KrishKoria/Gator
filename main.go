@@ -48,6 +48,7 @@ func main()  {
     cmds := &commands{}
     cmds.register("login", handlerLogin)    
     cmds.register("register", handlerRegister)    
+    cmds.register("reset", handlerReset)    
     
     if len(os.Args) < 2 {
         fmt.Println("Error: No command provided")
@@ -114,6 +115,17 @@ func handlerRegister(s *state, cmd command) error {
     }
 
     fmt.Printf("User created: %+v\n", user)
+    return nil
+}
+
+func handlerReset(s *state, cmd command) error {
+    err := s.DBQueries.DeleteAllUsers(context.Background())
+    if err != nil {
+        fmt.Println("Error: Failed to reset the database")
+        os.Exit(1)
+    }
+
+    fmt.Println("Database reset successfully")
     return nil
 }
 
