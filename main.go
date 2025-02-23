@@ -51,6 +51,7 @@ func main()  {
     cmds.register("reset", handlerReset)    
     cmds.register("users", handlerUsers)    
     cmds.register("agg", handlerAgg)
+    cmds.register("addfeed", handlerAddFeed)
     
     if len(os.Args) < 2 {
         fmt.Println("Error: No command provided")
@@ -159,6 +160,37 @@ func handlerAgg(s *state, cmd command) error {
     return nil
 }
 
+
+func handlerAddFeed(s *state, cmd command) error {
+    if len(cmd.Args) < 2 {
+        return fmt.Errorf("enter a feed name and URL")
+    }
+    feedName := cmd.Args[0]
+    feedURL := cmd.Args[1]
+
+    currentUser := s.Config.CurrentUserName
+    user, err := s.DBQueries.GetUser(context.Background(), currentUser)
+    if err != nil {
+        return fmt.Errorf("error getting current user: %v", err)
+    }
+
+    feedID := uuid.New()
+    now := time.Now()
+    feed, err := s.DBQueries.CreateFeed(context.Background(), database.CreateFeedParams{
+        ID:        feedID,
+        CreatedAt: now,
+        UpdatedAt: now,
+        Name:      feedName,
+        Url:       feedURL,
+        UserID:    user.ID,
+    })
+    if err != nil {
+        return fmt.Errorf("error creating feed: %v", err)
+    }
+
+    fmt.Printf("Feed created: %+v\n", feed)
+    return nil
+}
 
 func (c *commands) register(name string, f func(*state, command) error) {
     if c.Handlers == nil {
