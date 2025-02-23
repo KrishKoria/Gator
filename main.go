@@ -49,6 +49,7 @@ func main()  {
     cmds.register("login", handlerLogin)    
     cmds.register("register", handlerRegister)    
     cmds.register("reset", handlerReset)    
+    cmds.register("users", handlerUsers)    
     
     if len(os.Args) < 2 {
         fmt.Println("Error: No command provided")
@@ -118,6 +119,22 @@ func handlerRegister(s *state, cmd command) error {
     return nil
 }
 
+func handlerUsers(s *state, cmd command) error {
+    users, err := s.DBQueries.GetUsers(context.Background())
+    if err != nil {
+        return fmt.Errorf("error getting users: %v", err)
+    }
+
+    currentUser := s.Config.CurrentUserName
+    for _, user := range users {
+        if user.Name == currentUser {
+            fmt.Printf("* %s (current)\n", user.Name)
+        } else {
+            fmt.Printf("* %s\n", user.Name)
+        }
+    }
+    return nil
+}
 func handlerReset(s *state, cmd command) error {
     err := s.DBQueries.DeleteAllUsers(context.Background())
     if err != nil {
