@@ -1,4 +1,4 @@
- # 🐊 Gator Project
+# 🐊 Gator Project
 
  Gator is a command-line application for managing feeds and follows. With Gator, you can easily register, log in, add feeds, follow/unfollow feeds, and view the feeds you care about—all powered by a PostgreSQL database!
  
@@ -21,8 +21,8 @@
  - **Go** 1.16+ installed
  - **PostgreSQL** database installed and running
  - Required Go packages:
-   - [`github.com/lib/pq`](https:github.com/lib/pq) for PostgreSQL driver
-   - [`github.com/google/uuid`](https:github.com/google/uuid) for UUID generation
+   - [`github.com/lib/pq`](https://github.com/lib/pq) for PostgreSQL driver
+   - [`github.com/google/uuid`](https://github.com/google/uuid) for UUID generation
  
  ---
  
@@ -32,7 +32,7 @@
  
  1. **Clone the Repository:**
     ```sh
-    git clone https:github.com/KrishKoria/Gator.git
+    git clone https://github.com/KrishKoria/Gator.git
     cd Gator
     ```
  
@@ -53,8 +53,8 @@
  
  ```go
  type Config struct {
-     DBURL           string  Your PostgreSQL connection URL
-     CurrentUserName string  Username of the currently logged in user
+     DBURL           string  // Your PostgreSQL connection URL
+     CurrentUserName string  // Username of the currently logged in user
  }
  ```
  
@@ -76,7 +76,7 @@
    - `register <username>`: Register a new user.
    - `login <username>`: Log in as an existing user.
    - `users`: List all registered users.
-   - `reset`: Reset the database (delete all users).
+   - `reset`: Reset the database (delete all data).
  
  - **Feed Commands:**
    - `addfeed <name> <url>`: Add a new feed and automatically follow it.
@@ -84,7 +84,10 @@
    - `follow <url>`: Follow a feed using its URL.
    - `following`: List all feeds the current user is following.
    - `unfollow <url>`: Unfollow a feed using its URL.
-   - `agg`: Aggregate feed data.
+   - `agg <duration>`: Aggregate feed data every specified duration (e.g., "10s", "1m").
+ 
+ - **Post Commands:**
+   - `browse [limit]`: Browse posts for the current user, with an optional limit on the number of posts.
  
  ---
  
@@ -98,6 +101,12 @@
  - **CreateFeedFollow**: Add a new feed follow record and return related information.
  - **GetFeedFollowsForUser**: Get all feed follow records for a user.
  - **DeleteFeedFollowByUserAndFeedURL**: Remove a feed follow record using the user and feed URL.
+ - **DeleteAllFeeds**: Delete all feeds.
+ 
+ The SQL queries used for managing posts are located in the `sql/queries/posts.sql` file. They include:
+ 
+ - **CreatePost**: Insert a new post.
+ - **DeleteAllPosts**: Delete all posts.
  
  ---
  
@@ -136,7 +145,10 @@
    - `handlerFollow`: Follows a feed using its URL.
    - `handlerFollowing`: Lists feeds followed by the current user.
    - `handlerUnfollow`: Unfollows a feed using its URL.
-   - `handlerAgg`: Aggregates feed data (example command).
+   - `handlerAgg`: Aggregates feed data every specified duration.
+ 
+ - **Post Handlers:**
+   - `handlerBrowse`: Browses posts for the current user with an optional limit.
  
  ---
  

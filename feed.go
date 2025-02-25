@@ -2,16 +2,14 @@ package main
 
 import (
     "context"
-    "database/sql"
     "encoding/xml"
     "fmt"
     "html"
     "io"
     "net/http"
-    "time"
-    "github.com/google/uuid"
+    "log"
     "github.com/KrishKoria/Gator/internal/database"
-    "github.com/lib/pq"
+
 )
 
 type RSSFeed struct {
@@ -69,72 +67,30 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
     return &feed, nil
 }
 
-func parsePubDate(pubDate string) (time.Time, error) {
-    layouts := []string{
-        time.RFC1123Z,
-        time.RFC1123,
-        time.RFC3339,
-        "Mon, 02 Jan 2006 15:04:05 MST",
-    }
-
-    var t time.Time
-    var err error
-    for _, layout := range layouts {
-        t, err = time.Parse(layout, pubDate)
-        if err == nil {
-            return t, nil
-        }
-    }
-    return t, fmt.Errorf("could not parse pubDate: %v", pubDate)
+func scrapeFeeds(s *state) {
+	feed, err := s.DBQueries.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		log.Println("Couldn't get next feeds to fetch", err)
+		return
+	}
+	log.Println("Found a feed to fetch!")
+	scrapeFeed(s.DBQueries, feed)
 }
 
-func scrapeFeeds(ctx context.Context, s *state) error {
-    feed, err := s.DBQueries.GetNextFeedToFetch(ctx)
-    if err != nil {
-        return fmt.Errorf("error getting next feed to fetch: %v", err)
-    }
+func scrapeFeed(db *database.Queries, feed database.Feed) {
+	_, err := db.MarkFeedFetched(context.Background(), feed.ID)
+	if err != nil {
+		log.Printf("Couldn't mark feed %s fetched: %v", feed.Name, err)
+		return
+	}
 
-    err = s.DBQueries.MarkFeedFetched(ctx, feed.ID)
-    if err != nil {
-        return fmt.Errorf("error marking feed as fetched: %v", err)
-    }
-
-    rssFeed, err := fetchFeed(ctx, feed.Url)
-    if err != nil {
-        return fmt.Errorf("error fetching feed: %v", err)
-    }
-
-    for _, item := range rssFeed.Channel.Item {
-        select {
-        case <-ctx.Done():
-            return ctx.Err()
-        default:
-            pubDate, err := parsePubDate(item.PubDate)
-            if err != nil {
-                fmt.Printf("Error parsing pubDate: %v\n", err)
-                continue
-            }
-
-            postID := uuid.New()
-            now := time.Now()
-            _, err = s.DBQueries.CreatePost(ctx, database.CreatePostParams{
-                ID:          postID,
-                CreatedAt:   now,
-                UpdatedAt:   now,
-                Title:       item.Title,
-                Url:         item.Link,
-                Description: sql.NullString{String: item.Description, Valid: item.Description != ""},
-                PublishedAt: sql.NullTime{Time: pubDate, Valid: !pubDate.IsZero()},
-                FeedID:      feed.ID,
-            })
-            if err != nil {
-                if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-                    continue
-                }
-                fmt.Printf("Error creating post: %v\n", err)
-            }
-        }
-    }
-
-    return nil
+	feedData, err := fetchFeed(context.Background(), feed.Url)
+	if err != nil {
+		log.Printf("Couldn't collect feed %s: %v", feed.Name, err)
+		return
+	}
+	for _, item := range feedData.Channel.Item {
+		fmt.Printf("Found post: %s\n", item.Title)
+	}
+	log.Printf("Feed %s collected, %v posts found", feed.Name, len(feedData.Channel.Item))
 }
