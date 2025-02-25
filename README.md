@@ -84,7 +84,7 @@
    - `follow <url>`: Follow a feed using its URL.
    - `following`: List all feeds the current user is following.
    - `unfollow <url>`: Unfollow a feed using its URL.
-   - `agg`: Aggregate feed data (example command).
+   - `agg`: Aggregate feed data.
  
  ---
  

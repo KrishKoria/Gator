@@ -8,7 +8,7 @@ import (
     "os/signal"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-
+    "strconv"
 	"github.com/KrishKoria/Gator/internal/database"
 )
 
@@ -81,14 +81,27 @@ func handlerUsers(s *state, cmd command) error {
     }
     return nil
 }
+
 func handlerReset(s *state, cmd command) error {
     err := s.DBQueries.DeleteAllUsers(context.Background())
     if err != nil {
-        fmt.Println("Error: Failed to reset the database")
+        fmt.Println("Error: Failed to reset the users table")
         os.Exit(1)
     }
 
-    fmt.Println("Database reset successfully")
+    err = s.DBQueries.DeleteAllPosts(context.Background())
+    if err != nil {
+        fmt.Println("Error: Failed to reset the posts table")
+        os.Exit(1)
+    }
+
+    err = s.DBQueries.DeleteAllFeeds(context.Background())
+    if err != nil {
+        fmt.Println("Error: Failed to reset the feeds table")
+        os.Exit(1)
+    }
+
+    fmt.Println("All tables reset successfully")
     return nil
 }
 
@@ -265,5 +278,34 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
     }
 
     fmt.Printf("Unfollowed feed with URL '%s' for user '%s'\n", feedURL, user.Name)
+    return nil
+}
+
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+    limit := 2
+    if len(cmd.Args) > 0 {
+        var err error
+        limit, err = strconv.Atoi(cmd.Args[0])
+        if err != nil {
+            return fmt.Errorf("invalid limit: %v", err)
+        }
+    }
+
+    posts, err := s.DBQueries.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+        Name:  user.Name,
+        Limit: int32(limit),
+    })
+    if err != nil {
+        return fmt.Errorf("error getting posts for user: %v", err)
+    }
+
+    for _, post := range posts {
+        fmt.Printf("Title: %s\n", post.Title)
+        fmt.Printf("URL: %s\n", post.Url)
+        fmt.Printf("Description: %s\n", post.Description.String)
+        fmt.Printf("Published At: %s\n\n", post.PublishedAt.Time)
+    }
+
     return nil
 }

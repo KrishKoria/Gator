@@ -65,3 +65,6 @@ SELECT *
 FROM feeds
 ORDER BY last_fetched_at NULLS FIRST
 LIMIT 1;
+
+-- name: DeleteAllFeeds :exec
+DELETE FROM feeds;
