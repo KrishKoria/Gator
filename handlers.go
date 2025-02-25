@@ -222,3 +222,22 @@ func handlerFollowing(s *state, cmd command, user database.User) error {
     }
     return nil
 }
+
+
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+    if len(cmd.Args) < 1 {
+        return fmt.Errorf("enter a feed URL to unfollow")
+    }
+    feedURL := cmd.Args[0]
+
+    err := s.DBQueries.DeleteFeedFollowByUserAndFeedURL(context.Background(), database.DeleteFeedFollowByUserAndFeedURLParams{
+        UserID: user.ID,
+        Url:    feedURL,
+    })
+    if err != nil {
+        return fmt.Errorf("error unfollowing feed with URL %s: %v", feedURL, err)
+    }
+
+    fmt.Printf("Unfollowed feed with URL '%s' for user '%s'\n", feedURL, user.Name)
+    return nil
+}
