@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
-
+    "os/signal"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 
@@ -93,15 +93,41 @@ func handlerReset(s *state, cmd command) error {
 }
 
 func handlerAgg(s *state, cmd command) error {
-    ctx := context.Background()
-    feedURL := "https://www.wagslane.dev/index.xml"
-    feed, err := fetchFeed(ctx, feedURL)
+    if len(cmd.Args) < 1 {
+        return fmt.Errorf("enter a time duration for time_between_reqs")
+    }
+    timeBetweenReqs, err := time.ParseDuration(cmd.Args[0])
     if err != nil {
-        return fmt.Errorf("error fetching feed: %v", err)
+        return fmt.Errorf("invalid duration: %v", err)
     }
 
-    fmt.Printf("Fetched Feed: %+v\n", feed)
-    return nil
+    fmt.Printf("Collecting feeds every %s\n", timeBetweenReqs)
+
+    ticker := time.NewTicker(timeBetweenReqs)
+    defer ticker.Stop()
+
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    go func() {
+        c := make(chan os.Signal, 1)
+        signal.Notify(c, os.Interrupt)
+        <-c
+        cancel()
+    }()
+
+    for {
+        select {
+        case <-ctx.Done():
+            fmt.Println("Stopping feed collection...")
+            return nil
+        case <-ticker.C:
+            err := scrapeFeeds(ctx, s)
+            if err != nil {
+                fmt.Printf("Error scraping feeds: %v\n", err)
+            }
+        }
+    }
 }
 
 
