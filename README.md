@@ -1,163 +1,100 @@
-# 🐊 Gator Project
+ # 🐊 Gator Project
 
  Gator is a command-line application for managing feeds and follows. With Gator, you can easily register, log in, add feeds, follow/unfollow feeds, and view the feeds you care about—all powered by a PostgreSQL database!
- 
+
  ---
- 
+
  ## 🚀 Features
- 
+
  - **User Management**: Register and log in with ease.
  - **Feed Management**: Add new feeds effortlessly.
  - **Following System**: Follow or unfollow feeds with a simple command.
  - **Data Viewing**: List all feeds with associated user information.
  - **Personalized Feed**: Quickly view feeds you're following.
- 
+
  ---
- 
+
  ## 📋 Prerequisites
- 
- Before getting started, make sure you have the following:
- 
- - **Go** 1.16+ installed
- - **PostgreSQL** database installed and running
- - Required Go packages:
-   - [`github.com/lib/pq`](https://github.com/lib/pq) for PostgreSQL driver
-   - [`github.com/google/uuid`](https://github.com/google/uuid) for UUID generation
- 
+
+ To run Gator, you'll need the following installed on your system:
+ - **Go** 1.16+ (or later)
+ - **PostgreSQL** database
+
+ Go programs are statically compiled binaries, so once you've built the application, you can run it without needing the Go toolchain installed.
+
  ---
- 
- ## 🛠️ Installation
- 
- Follow these steps to set up Gator on your machine:
- 
+
+ ## 🛠️ Installation & Setup
+
  1. **Clone the Repository:**
     ```sh
-    git clone https://github.com/KrishKoria/Gator.git
+    git clone https:github.com/KrishKoria/Gator.git
     cd Gator
     ```
- 
+
  2. **Install Dependencies:**
     ```sh
     go mod tidy
     ```
- 
+
  3. **Configure Your Database:**
     - Set up your PostgreSQL database.
-    - Update the configuration file (`internal/config/config.go`) with your database URL.
- 
+    - Update the configuration file located at `internal/config/config.go` with your database URL and the default user.
+      ```go
+      type Config struct {
+          DBURL           string   Your PostgreSQL connection URL
+          CurrentUserName string   Username of the currently logged in user
+      }
+      ```
+
  ---
- 
- ## ⚙️ Configuration
- 
- Gator uses a configuration file to manage its settings. Update the file at `internal/config/config.go` with the following structure:
- 
- ```go
- type Config struct {
-     DBURL           string  // Your PostgreSQL connection URL
-     CurrentUserName string  // Username of the currently logged in user
- }
- ```
- 
- Ensure that your `DBURL` is correctly set so that Gator can connect to your PostgreSQL instance.
- 
+
+ ## 🚀 Building & Installing the CLI
+
+ For development purposes, you can run the application using:
+    ```sh
+    go run . <command> [arguments]
+    ```
+
+ **Production Build:** Build a statically compiled binary named `gator` that you can run without the Go toolchain.
+ To install the CLI globally, run:
+    ```sh
+    go install github.com/KrishKoria/Gator@latest
+    ```
+ This will compile and install the `gator` binary into your `$GOPATH/bin` (or `$HOME/go/bin`), which should be in your system PATH.
+
  ---
- 
+
  ## 📖 Usage
- 
- Run the application by navigating to the project directory and executing:
- 
- ```sh
- go run . <command> [arguments]
- ```
- 
+
+ After installing, you can run the Gator CLI directly with:
+    ```sh
+    gator <command> [arguments]
+    ```
+
  ### 🔍 Available Commands
- 
- - **User Commands:**
-   - `register <username>`: Register a new user.
-   - `login <username>`: Log in as an existing user.
-   - `users`: List all registered users.
-   - `reset`: Reset the database (delete all data).
- 
- - **Feed Commands:**
-   - `addfeed <name> <url>`: Add a new feed and automatically follow it.
-   - `feeds`: List all feeds with user information.
-   - `follow <url>`: Follow a feed using its URL.
-   - `following`: List all feeds the current user is following.
-   - `unfollow <url>`: Unfollow a feed using its URL.
-   - `agg <duration>`: Aggregate feed data every specified duration (e.g., "10s", "1m").
- 
- - **Post Commands:**
-   - `browse [limit]`: Browse posts for the current user, with an optional limit on the number of posts.
- 
+
+ **User Commands:**
+ - `register <username>`: Register a new user.
+ - `login <username>`: Log in as an existing user.
+ - `users`: List all registered users.
+ - `reset`: Reset the database (delete all data).
+
+ **Feed Commands:**
+ - `addfeed <name> <url>`: Add a new feed and automatically follow it.
+ - `feeds`: List all feeds with user information.
+ - `follow <url>`: Follow a feed using its URL.
+ - `following`: List all feeds the current user is following.
+ - `unfollow <url>`: Unfollow a feed using its URL.
+ - `agg <duration>`: Aggregate feed data every specified duration (e.g., "10s", "1m").
+
+ **Post Commands:**
+ - `browse [limit]`: Browse posts for the current user, with an optional limit on the number of posts.
+
+ *Note:* `go run .` is intended for development. For production, use the installed `gator` binary.
+
  ---
- 
- ## 🗄️ SQL Queries
- 
- The SQL queries used for managing feeds are located in the `sql/queries/feeds.sql` file. They include:
- 
- - **CreateFeed**: Insert a new feed.
- - **GetFeedsWithUsers**: Retrieve all feeds along with user details.
- - **GetFeedByURL**: Fetch a feed by its URL.
- - **CreateFeedFollow**: Add a new feed follow record and return related information.
- - **GetFeedFollowsForUser**: Get all feed follow records for a user.
- - **DeleteFeedFollowByUserAndFeedURL**: Remove a feed follow record using the user and feed URL.
- - **DeleteAllFeeds**: Delete all feeds.
- 
- The SQL queries used for managing posts are located in the `sql/queries/posts.sql` file. They include:
- 
- - **CreatePost**: Insert a new post.
- - **DeleteAllPosts**: Delete all posts.
- 
- ---
- 
- ## 🛡️ Middleware
- 
- To ensure that only authenticated users perform certain actions, Gator uses middleware. For example, the `middlewareLoggedIn` function verifies the current user before processing commands:
- 
- ```go
- func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
-     return func(s *state, cmd command) error {
-         currentUser := s.Config.CurrentUserName
-         user, err := s.DBQueries.GetUser(context.Background(), currentUser)
-         if err != nil {
-             return fmt.Errorf("error getting current user: %v", err)
-         }
-         return handler(s, cmd, user)
-     }
- }
- ```
- 
- ---
- 
- ## 📝 Handlers
- 
- The command handlers in `handlers.go` define the behavior for each command:
- 
- - **User Handlers:**
-   - `handlerLogin`: Processes user login.
-   - `handlerRegister`: Handles user registration.
-   - `handlerUsers`: Displays all registered users.
-   - `handlerReset`: Resets the database.
- 
- - **Feed Handlers:**
-   - `handlerAddFeed`: Adds a new feed and follows it automatically.
-   - `handlerFeeds`: Lists all feeds with user details.
-   - `handlerFollow`: Follows a feed using its URL.
-   - `handlerFollowing`: Lists feeds followed by the current user.
-   - `handlerUnfollow`: Unfollows a feed using its URL.
-   - `handlerAgg`: Aggregates feed data every specified duration.
- 
- - **Post Handlers:**
-   - `handlerBrowse`: Browses posts for the current user with an optional limit.
- 
- ---
- 
- ## 📜 License
- 
- This project is licensed under the **MIT License**. Feel free to use, modify, and distribute it as needed.
- 
- ---
- 
+
  Happy coding and enjoy using Gator! 🐊✨
- 
- Feel free to reach out if you have any questions or need further enhancements.
+
+ If you have any questions or need further assistance, feel free to reach out.
