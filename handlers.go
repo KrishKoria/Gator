@@ -105,7 +105,7 @@ func handlerAgg(s *state, cmd command) error {
 }
 
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
     if len(cmd.Args) < 2 {
         return fmt.Errorf("enter a feed name and URL")
     }
@@ -133,6 +133,7 @@ func handlerAddFeed(s *state, cmd command) error {
     }
     
     fmt.Printf("Feed created: %+v\n", feed)
+
     followID := uuid.New()
     follow, err := s.DBQueries.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
         ID:        followID,
@@ -164,7 +165,7 @@ func handlerFeeds(s *state, cmd command) error {
     return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
     if len(cmd.Args) < 1 {
         return fmt.Errorf("enter a feed URL to follow")
     }
@@ -198,7 +199,7 @@ func handlerFollow(s *state, cmd command) error {
     return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
+func handlerFollowing(s *state, cmd command, user database.User) error {
     currentUser := s.Config.CurrentUserName
     user, err := s.DBQueries.GetUser(context.Background(), currentUser)
     if err != nil {
